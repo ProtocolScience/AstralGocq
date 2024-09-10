@@ -246,10 +246,12 @@ func LoginInteract() {
 	isQRCodeLogin := (base.Account.Uin == 0 || len(base.Account.Password) == 0) && !base.Account.Encrypt
 	isTokenLogin := false
 
-	if isQRCodeLogin && cli.Device().Protocol != 2 {
-		log.Warn("当前协议不支持二维码登录, 请配置账号密码登录.")
-		os.Exit(0)
-	}
+	//安卓手表 安卓手机 安卓PAD 均可扫码登录
+	/*
+		if isQRCodeLogin && cli.Device().Protocol != 2 && cli.Device().Protocol != 6 && cli.Device().Protocol != 1 {
+			log.Warn("当前协议不支持二维码登录, 请配置账号密码登录.")
+			os.Exit(0)
+		}*/
 
 	// 加载本地版本信息, 一般是在上次登录时保存的
 	versionFile := path.Join(global.VersionsPath, fmt.Sprint(int(cli.Device().Protocol))+".json")
