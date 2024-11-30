@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	//	"github.com/Mrs4s/go-cqhttp/internal/download"
 	"os"
 	"path"
 	"sync"
@@ -17,9 +18,9 @@ import (
 	"github.com/Mrs4s/MiraiGo/wrapper"
 	para "github.com/fumiama/go-hide-param"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/pkg/errors"
+	//	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
+	//	"github.com/tidwall/gjson"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/term"
 
@@ -29,7 +30,7 @@ import (
 	"github.com/Mrs4s/go-cqhttp/global/terminal"
 	"github.com/Mrs4s/go-cqhttp/internal/base"
 	"github.com/Mrs4s/go-cqhttp/internal/cache"
-	"github.com/Mrs4s/go-cqhttp/internal/download"
+	//	"github.com/Mrs4s/go-cqhttp/internal/download"
 	"github.com/Mrs4s/go-cqhttp/internal/selfdiagnosis"
 	"github.com/Mrs4s/go-cqhttp/internal/selfupdate"
 	"github.com/Mrs4s/go-cqhttp/modules/servers"
@@ -169,19 +170,8 @@ func LoginInteract() {
 	}
 	if signServer != nil && len(signServer.URL) > 1 {
 		log.Infof("使用签名服务器：%v", signServer.URL)
-		go signStartRefreshToken(base.Account.RefreshInterval) // 定时刷新 token
 		wrapper.DandelionEnergy = energy
 		wrapper.FekitGetSign = sign
-		if !base.IsBelow110 {
-			if !base.Account.AutoRegister {
-				log.Warn("自动注册实例已关闭，请配置 sign-server 端自动注册实例以保持正常签名")
-			}
-			if !base.Account.AutoRefreshToken {
-				log.Info("自动刷新 token 已关闭，token 过期后获取签名时将不会立即尝试刷新获取新 token")
-			}
-		} else {
-			log.Warn("签名服务器版本 <= 1.1.0 ，无法使用刷新 token 等操作，建议使用 1.1.6 版本及以上签名服务器")
-		}
 	} else {
 		log.Warnf("警告: 未配置签名服务器或签名服务器不可用, 这可能会导致登录 45 错误码或发送消息被风控")
 	}
@@ -243,15 +233,16 @@ func LoginInteract() {
 	log.Infof("使用协议: %s", device.Protocol.Version())
 	cli = newClient()
 	cli.UseDevice(device)
+	isWatchProtocol := cli.Device().Protocol == 2
 	isQRCodeLogin := (base.Account.Uin == 0 || len(base.Account.Password) == 0) && !base.Account.Encrypt
+	isQRCodeLogin = isQRCodeLogin || isWatchProtocol //手表只能二维码登录
+
 	isTokenLogin := false
 
-	//安卓手表 安卓手机 安卓PAD 均可扫码登录
-	/*
-		if isQRCodeLogin && cli.Device().Protocol != 2 && cli.Device().Protocol != 6 && cli.Device().Protocol != 1 {
-			log.Warn("当前协议不支持二维码登录, 请配置账号密码登录.")
-			os.Exit(0)
-		}*/
+	if isQRCodeLogin && !isWatchProtocol {
+		log.Warn("当前协议不支持二维码登录, 请配置账号密码登录.")
+		os.Exit(0)
+	}
 
 	// 加载本地版本信息, 一般是在上次登录时保存的
 	versionFile := path.Join(global.VersionsPath, fmt.Sprint(int(cli.Device().Protocol))+".json")
@@ -309,34 +300,35 @@ func LoginInteract() {
 		cli.Uin = base.Account.Uin
 		cli.PasswordMd5 = base.PasswordHash
 	}
-	download.SetTimeout(time.Duration(base.HTTPTimeout) * time.Second)
-	if !base.FastStart {
-		log.Infof("正在检查协议更新...")
-		currentVersionName := device.Protocol.Version().SortVersionName
-		remoteVersion, err := getRemoteLatestProtocolVersion(int(device.Protocol.Version().Protocol))
-		if err == nil {
-			remoteVersionName := gjson.GetBytes(remoteVersion, "sort_version_name").String()
-			if remoteVersionName != currentVersionName {
-				switch {
-				case !base.UpdateProtocol:
-					log.Infof("检测到协议更新: %s -> %s", currentVersionName, remoteVersionName)
-					log.Infof("如果登录时出现版本过低错误, 可尝试使用 -update-protocol 参数启动")
-				case !isTokenLogin:
-					_ = device.Protocol.Version().UpdateFromJson(remoteVersion)
-					err := os.WriteFile(versionFile, remoteVersion, 0644)
-					log.Infof("协议版本已更新: %s -> %s", currentVersionName, remoteVersionName)
-					if err != nil {
-						log.Warnln("更新协议版本缓存文件", versionFile, "失败:", err)
+	/*
+		download.SetTimeout(time.Duration(base.HTTPTimeout) * time.Second)
+		if !base.FastStart {
+			log.Infof("正在检查协议更新...")
+			currentVersionName := device.Protocol.Version().SortVersionName
+			remoteVersion, err := getRemoteLatestProtocolVersion(int(device.Protocol.Version().Protocol))
+			if err == nil {
+				remoteVersionName := gjson.GetBytes(remoteVersion, "sort_version_name").String()
+				if remoteVersionName != currentVersionName {
+					switch {
+					case !base.UpdateProtocol:
+						log.Infof("检测到协议更新: %s -> %s", currentVersionName, remoteVersionName)
+						log.Infof("如果登录时出现版本过低错误, 可尝试使用 -update-protocol 参数启动")
+					case !isTokenLogin:
+						_ = device.Protocol.Version().UpdateFromJson(remoteVersion)
+						err := os.WriteFile(versionFile, remoteVersion, 0644)
+						log.Infof("协议版本已更新: %s -> %s", currentVersionName, remoteVersionName)
+						if err != nil {
+							log.Warnln("更新协议版本缓存文件", versionFile, "失败:", err)
+						}
+					default:
+						log.Infof("检测到协议更新: %s -> %s", currentVersionName, remoteVersionName)
+						log.Infof("由于使用了会话缓存, 无法自动更新协议, 请删除缓存后重试")
 					}
-				default:
-					log.Infof("检测到协议更新: %s -> %s", currentVersionName, remoteVersionName)
-					log.Infof("由于使用了会话缓存, 无法自动更新协议, 请删除缓存后重试")
 				}
+			} else if err.Error() != "remote version unavailable" {
+				log.Warnf("检查协议更新失败: %v", err)
 			}
-		} else if err.Error() != "remote version unavailable" {
-			log.Warnf("检查协议更新失败: %v", err)
-		}
-	}
+		}*/
 	if !isTokenLogin {
 		if !isQRCodeLogin {
 			if err := commonLogin(); err != nil {
@@ -483,6 +475,7 @@ func newClient() *client.QQClient {
 	return c
 }
 
+/*
 var remoteVersions = map[int]string{
 	1: "https://raw.githubusercontent.com/RomiChan/protocol-versions/master/android_phone.json",
 	6: "https://raw.githubusercontent.com/RomiChan/protocol-versions/master/android_pad.json",
@@ -498,7 +491,7 @@ func getRemoteLatestProtocolVersion(protocolType int) ([]byte, error) {
 		return download.Request{URL: "https://mirror.ghproxy.com/" + url}.Bytes()
 	}
 	return response, nil
-}
+}*/
 
 type protocolLogger struct{}
 

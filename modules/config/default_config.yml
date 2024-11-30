@@ -21,7 +21,7 @@ account: # 账号相关
   # 如果遇到 登录 45 错误, 或者发送信息风控的话需要填入一个或多个服务器
   # 不建议设置过多，设置主备各一个即可，超过 5 个只会取前五个
   # 示例:
-  # sign-servers: 
+  # sign-servers:
   #   - url: 'http://127.0.0.1:8080' # 本地签名服务器
   #     key: "114514"  # 相应 key
   #     authorization: "-"   # authorization 内容, 依服务端设置
@@ -32,13 +32,15 @@ account: # 账号相关
   # 
   # 服务器可使用docker在本地搭建或者使用他人开放的服务
   sign-servers: 
-    - url: '-'  # 主签名服务器地址， 必填
-      key: '114514'  # 签名服务器所需要的apikey, 如果签名服务器的版本在1.1.0及以下则此项无效
+    - url: 'https://qsign.trpgbot.com'  # 主签名服务器地址， 必填
+      key: 'selfshare'  # 签名服务器所需要的apikey, 如果签名服务器的版本在1.1.0及以下则此项无效
       authorization: '-'   # authorization 内容, 依服务端设置，如 'Bearer xxxx'
-    - url: '-'  # 备用
-      key: '114514'  
+    - url: 'https://qsign-v3.trpgbot.com'  # 备用
+      key: 'selfshare'
       authorization: '-' 
-
+    - url: 'https://zyr15r-astralqsign.hf.space'  # 备用
+      key: 'selfshare'
+      authorization: '-'
   # 判断签名服务不可用（需要切换）的额外规则
   # 0: 不设置 （此时仅在请求无法返回结果时判定为不可用）
   # 1: 在获取到的 sign 为空 （若选此建议关闭 auto-register，一般为实例未注册但是请求签名的情况）

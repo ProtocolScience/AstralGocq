@@ -39,9 +39,6 @@ type Account struct {
 	RuleChangeSignServer int          `yaml:"rule-change-sign-server"`
 	MaxCheckCount        uint         `yaml:"max-check-count"`
 	SignServerTimeout    uint         `yaml:"sign-server-timeout"`
-	IsBelow110           bool         `yaml:"is-below-110"`
-	AutoRegister         bool         `yaml:"auto-register"`
-	AutoRefreshToken     bool         `yaml:"auto-refresh-token"`
 	RefreshInterval      int64        `yaml:"refresh-interval"`
 }
 
