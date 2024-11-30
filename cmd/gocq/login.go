@@ -16,7 +16,6 @@ import (
 	"gopkg.ilharper.com/x/isatty"
 
 	"github.com/Mrs4s/go-cqhttp/global"
-	"github.com/Mrs4s/go-cqhttp/internal/download"
 )
 
 var console = bufio.NewReader(os.Stdin)
@@ -224,16 +223,4 @@ func getTicket(u string) string {
 	log.Warnf("请前往该地址验证 -> %v ", u)
 	log.Warn("请输入ticket： (Enter 提交)")
 	return readLine()
-}
-
-func fetchCaptcha(id string) string {
-	g, err := download.Request{URL: "https://captcha.go-cqhttp.org/captcha/ticket?id=" + id}.JSON()
-	if err != nil {
-		log.Debugf("获取 Ticket 时出现错误: %v", err)
-		return ""
-	}
-	if g.Get("ticket").Exists() {
-		return g.Get("ticket").String()
-	}
-	return ""
 }
