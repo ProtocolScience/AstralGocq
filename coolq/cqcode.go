@@ -868,7 +868,10 @@ func (bot *CQBot) ConvertElement(spec *onebot.Spec, elem msg.Element, sourceType
 		path := elem.Get("path")
 		name := elem.Get("name")
 		size, _ := strconv.ParseInt(elem.Get("size"), 10, 64)
-		busid, _ := strconv.ParseInt(elem.Get("busid"), 10, 64)
+		busid, _ := strconv.ParseInt(elem.Get("busid"), 10, 32)
+		if busid < math.MinInt32 || busid > math.MaxInt32 {
+			return nil, errors.New("busid value out of range for int32: " + elem.Get("busid"))
+		}
 		return &message.GroupFileElement{
 			Name:  name,
 			Size:  size,
